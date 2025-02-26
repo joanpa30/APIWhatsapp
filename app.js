@@ -1,125 +1,76 @@
-const { createBot, createProvider, createFlow, addKeyword } = require('@bot-whatsapp/bot')
-const express = require('express')
+const { createBot, createProvider, createFlow, addKeyword } = require('@bot-whatsapp/bot');
+const express = require('express');
+const QRPortalWeb = require('@bot-whatsapp/portal');
+const BaileysProvider = require('@bot-whatsapp/provider/baileys');
+const MockAdapter = require('@bot-whatsapp/database/mock');
+const axios = require('axios');
 
-const QRPortalWeb = require('@bot-whatsapp/portal')
-const BaileysProvider = require('@bot-whatsapp/provider/baileys')
-const MockAdapter = require('@bot-whatsapp/database/mock')
-const app = express() //Llamada a función Express
-const PORT = 3030 // Crea el puerto para realizar las peticiones
+const app = express();
+const PORT = 3030;
+const N8N_WEBHOOK_URL = 'http://149.50.143.17:5678/webhook/whatsappAgent'; // Cambia esto por la URL de tu webhook en N8N
 
-const flowSecundario = addKeyword(['2', 'siguiente']).addAnswer(['📄 Aquí tenemos el flujo secundario'])
+const adapterDB = new MockAdapter();
+const adapterProvider = createProvider(BaileysProvider);
+const adapterFlow = createFlow([]);
 
-const flowDocs = addKeyword(['doc', 'documentacion', 'documentación']).addAnswer(
-    [
-        '📄 Aquí encontras las documentación recuerda que puedes mejorarla',
-        'https://bot-whatsapp.netlify.app/',
-        '\n*2* Para siguiente paso.',
-    ],
-    null,
-    null,
-    [flowSecundario]
-)
+const sendDirectMessage = async (provider, jid, message) => {
+    try {
+        await provider.sendText(jid, message, { options: {} });
+        console.log(`Mensaje enviado a ${jid}: ${message}`);
+    } catch (error) {
+        console.error(`Error al enviar mensaje a ${jid}:`, error);
+    }
+};
 
-const flowTuto = addKeyword(['tutorial', 'tuto']).addAnswer(
-    [
-        '🙌 Aquí encontras un ejemplo rapido',
-        'https://bot-whatsapp.netlify.app/docs/example/',
-        '\n*2* Para siguiente paso.',
-    ],
-    null,
-    null,
-    [flowSecundario]
-)
-
-const flowGracias = addKeyword(['gracias', 'grac']).addAnswer(
-    [
-        '🚀 Puedes aportar tu granito de arena a este proyecto',
-        '[*opencollective*] https://opencollective.com/bot-whatsapp',
-        '[*buymeacoffee*] https://www.buymeacoffee.com/leifermendez',
-        '[*patreon*] https://www.patreon.com/leifermendez',
-        '\n*2* Para siguiente paso.',
-    ],
-    null,
-    null,
-    [flowSecundario]
-)
-
-const flowDiscord = addKeyword(['discord']).addAnswer(
-    ['🤪 Únete al discord', 'https://link.codigoencasa.com/DISCORD', '\n*2* Para siguiente paso.'],
-    null,
-    null,
-    [flowSecundario]
-)
-
-const flowPrincipal = addKeyword(['Bot'])
-    .addAnswer('🙌 Hola bienvenido a este *Chatbot*')
-    .addAnswer(
-        [
-            'te comparto los siguientes links de interes sobre el proyecto',
-            '👉 *doc* para ver la documentación',
-            '👉 *gracias*  para ver la lista de videos',
-            '👉 *discord* unirte al discord',
-        ],
-        null,
-        null,
-        [flowDocs, flowGracias, flowTuto, flowDiscord]
-    )
-
-    //Envia mensaje directo desde whatsapp a un numero de movil
-    const sendDirectMessage = async (provider, jid, message) => {
-        try {
-            await provider.sendText(jid, message, {options: {}});
-            console.log(`Message sent to ${jid}`);
-        } catch (error) {
-            console.error(`Failed to send message to ${jid}:`, error);
-        }
-    };
-
-
-    const main = async () => {
-    const adapterDB = new MockAdapter()
-    const adapterFlow = createFlow([flowPrincipal])
-    const adapterProvider = createProvider(BaileysProvider)
-
-    
+const main = async () => {
     createBot({
         flow: adapterFlow,
         provider: adapterProvider,
         database: adapterDB,
-    })
+    });
 
-    QRPortalWeb()
+    QRPortalWeb();
 
-// Metodo para obtener el mensaje desde un Http
+    adapterProvider.on('message', async (msg) => {
+        const { from, body, pushName, id } = msg;
+        console.log(`Nuevo mensaje de ${pushName} (${from}): ${body}`);
+
+        try {
+            const response = await axios.post(N8N_WEBHOOK_URL, {
+                numero: from.replace('@s.whatsapp.net', ''),
+                mensaje: body,
+                nombre: pushName,
+                contexto: id,
+            });
+
+            if (response.data && response.data.respuesta) {
+                await sendDirectMessage(adapterProvider, from, response.data.respuesta);
+            }
+        } catch (error) {
+            console.error('Error al enviar datos a N8N:', error);
+        }
+    });
+
     app.get('/send-message', async (req, res) => {
-        const {number, message} = req.query;
+        const { number, message } = req.query;
 
         if (!number || !message) {
-            return res.status(400).send('Missing "number" or "message" query parameters.');
+            return res.status(400).send('Faltan parámetros "number" o "message".');
         }
 
-        const jid = `${number}@s.whatsapp.net`; // Format the number into WhatsApp JID
+        const jid = `${number}@s.whatsapp.net`; // Formato de WhatsApp
 
         try {
             await sendDirectMessage(adapterProvider, jid, message);
-            res.status(200).send(`Message sent to ${number}`);
+            res.status(200).send(`Mensaje enviado a ${number}`);
         } catch (error) {
-            res.status(500).send(`Failed to send message: ${error.message}`);
+            res.status(500).send(`Error enviando mensaje: ${error.message}`);
         }
     });
+};
 
-    adapterProvider.on('ready', () => {
-        console.log('Provider is ready.');
-    });
+main();
 
-    adapterProvider.on('error', (err) => {
-        console.error('Provider error:', err);
-    });
-
-    app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
-        });
-
-}
-
-main()
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
