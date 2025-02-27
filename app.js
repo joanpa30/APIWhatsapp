@@ -54,8 +54,10 @@ const main = async () => {
 
                 // Verifica si response.data es un array y accede al primer elemento
                 if (Array.isArray(response.data) && response.data.length > 0) {
-                    const respuestaN8N = response.data[0].respuesta; // Extraer la respuesta
-                    await sendDirectMessage(adapterProvider, from, respuestaN8N);
+                    const from = Object.keys(response.data[0])[0] + "@s.whatsapp.net";
+                    console.log("Número después de procesar:", from);
+                    await sendDirectMessage(adapterProvider, from, response.data[0].respuesta);
+
                 } else {
                     console.error("La respuesta de N8N no es válida:", response.data);
                 }
