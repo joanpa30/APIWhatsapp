@@ -6,28 +6,37 @@ on:
       - main  # Se ejecuta solo cuando haces push a la rama main
 
 jobs:
-  deploy:
+  create-docker-image:
     runs-on: ubuntu-latest
 
     steps:
       # 🛠️ 1. Clonar el repositorio
-      - name: Checkout del código
+      - name: Checkout the code
         uses: actions/checkout@v4
 
       # 🔑 2. Iniciar sesión en GitHub Container Registry (GHCR)
-      - name: Iniciar sesión en GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v1
+        with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GHCR_TOKEN }}
+ 
       # 🏗️ 3. Construir la imagen de Docker
-      - name: Construir la imagen
+      - name: Build the Docker Image
         run: |
-          docker build -t ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest .
+            docker build -t ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest .
 
       # 🚀 4. Subir la imagen a GHCR
-      - name: Subir la imagen a GHCR
+      - name: Upload the Image to GHCR
         run: |
-          docker push ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+            docker push ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+        
+  deploy:
+    needs: create-docker-image
+    runs-on: ubuntu-latest
 
+    steps:
       # 🔄 5. Conectar al VPS y actualizar el contenedor
       - name: Desplegar en VPS
         uses: appleboy/ssh-action@v0.1.10
