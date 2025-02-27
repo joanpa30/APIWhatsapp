@@ -33,23 +33,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Install SSH into Server  
-      - name: SSH into Server
-        run: sudo apt-get install -y sshpass
-
       # 🔄 5. Conectar al VPS y actualizar el contenedor
       - name: Deploy into VPS
-        run: |
-            sshpass -p "${{ secrets.VPS_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
-                cd /root/APIWhatsapp/
-                echo "Conectado al VPS"
-                hostname
-                docker login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_TOKEN }}
-                docker pull ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+            host: ${{ secrets.VPS_HOST }}
+            username: ${{ secrets.VPS_USER }}
+            password: ${{ secrets.VPS_PASSWORD }}
+            port: ${{ secrets.VPS_PORT }}
+            script: |
+                cd /APIWhatsapp
+                docker pull ghcr.io/${{ github.repository_owner }}/apiwhatsapp:latest
                 docker stop apiwhatsapp || true
                 docker rm apiwhatsapp || true
-                docker run -d --name apiwhatsapp -p 3000:3000 -p 3030:3030 ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
-                docker system prune -f
-                docker ps
-            EOF
+                docker run -d --name apiwhatsapp -p 3000:3000 ghcr.io/${{ github.repository_owner }}/apiwhatsapp:latest
+        
          
