@@ -52,8 +52,32 @@ const main = async () => {
                 nombre: pushName || "Desconocido",
                 contexto: id,
             });
-    
-            console.log("Respuesta de N8N:", response.data);
+
+            console.log("Respuesta completa de N8N:", response.data); 
+
+            // Verifica si response.data es un array y accede al primer elemento
+            if (Array.isArray(response.data) && response.data.length > 0) {
+                let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
+                let fromKey = keys[0]; // "from"
+                let respuestaKey = keys[1]; // "respuesta"
+            
+                let from = response.data[0][fromKey];
+                let respuesta = response.data[0][respuestaKey];
+            
+                console.log(from); // "573113787978"
+                console.log(respuesta); // "¡Hola! ¿En qué puedo ayudarte?"
+            
+                // Agrega el dominio de WhatsApp si es necesario
+                if (!from.includes("@s.whatsapp.net")) {
+                    from = from + "@s.whatsapp.net";
+                }
+                            
+                await sendDirectMessage(adapterProvider, from, respuesta);
+
+            } else {
+                console.error("La respuesta de N8N no es válida:", response.data);
+            }
+                        
         } catch (error) {
             console.error("Error enviando a N8N:", error);
         }
