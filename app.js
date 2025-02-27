@@ -4,6 +4,7 @@ const QRPortalWeb = require('@bot-whatsapp/portal');
 const BaileysProvider = require('@bot-whatsapp/provider/baileys');
 const MockAdapter = require('@bot-whatsapp/database/mock');
 const axios = require('axios');
+const { aesDecrypt } = require('@whiskeysockets/baileys');
 
 const app = express();
 const PORT = 3030;
@@ -11,6 +12,7 @@ const N8N_WEBHOOK_URL = 'http://149.50.143.17:5678/webhook-test/whatsappAgent'; 
 const adapterDB = new MockAdapter();
 const adapterProvider = createProvider(BaileysProvider);
 const adapterFlow = createFlow([]);
+
 
 const sendDirectMessage = async (provider, jid, message) => {
     try {
@@ -44,12 +46,16 @@ const main = async () => {
 
             if (response.data && response.data.respuesta) {
                 await sendDirectMessage(adapterProvider, from, response.data.respuesta);
+            }else{
+                console.error("Respuesta de N8N", response.data);
             }
+            
         } catch (error) {
             console.error('Error al enviar datos a N8N:', error);
         }
     });
 
+    //Crea un objeto para enviar un mensaje directo desde un weebhook
     app.get('/send-message', async (req, res) => {
         const { number, message } = req.query;
 
