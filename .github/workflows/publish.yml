@@ -16,7 +16,7 @@ jobs:
 
       # 🔑 2. Iniciar sesión en GitHub Container Registry (GHCR)
       - name: Iniciar sesión en GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       # 🏗️ 3. Construir la imagen de Docker
       - name: Construir la imagen
