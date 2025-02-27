@@ -8,7 +8,7 @@ const { aesDecrypt } = require('@whiskeysockets/baileys');
 
 const app = express();
 const PORT = 3030;
-const N8N_WEBHOOK_URL = 'http://149.50.143.17:5678/webhook-test/whatsappAgent'; //webhook en N8N
+const N8N_WEBHOOK_URL = 'http://149.50.143.17:5678/webhook/whatsappAgent'; //webhook en N8N
 const adapterDB = new MockAdapter();
 const adapterProvider = createProvider(BaileysProvider);
 const adapterFlow = createFlow([]);
