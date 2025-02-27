@@ -49,30 +49,32 @@ const main = async () => {
             }else{
                 console.error("Respuesta de N8N", response.data);
             }*/
-               
-                let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
-                let fromKey = keys[0]; // "from"
-                let respuestaKey = keys[1]; // "respuesta"
-
-                let from = response.data[0][fromKey];
-                let respuesta = response.data[0][respuestaKey];
-
-                console.log(from); // "573113787978"
-                console.log(respuesta); // "¡Hola! ¿En qué puedo ayudarte?"
-
+                              
                 console.log("Respuesta completa de N8N:", response.data); 
                 console.log("Número antes de procesar:", from);
+                console.log("Valor antes de procesar:", respuesta);
 
                 // Verifica si response.data es un array y accede al primer elemento
                 if (Array.isArray(response.data) && response.data.length > 0) {
-                    let from = Object.keys(response.data[0])[0];  // Obtiene el número correctamente
+                    let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
+                    let fromKey = keys[0]; // "from"
+                    let respuestaKey = keys[1]; // "respuesta"
+                
+                    let from = response.data[0][fromKey];
+                    let respuesta = response.data[0][respuestaKey];
+                
+                    console.log(from); // "573113787978"
+                    console.log(respuesta); // "¡Hola! ¿En qué puedo ayudarte?"
+                
+                    // Agrega el dominio de WhatsApp si es necesario
                     if (!from.includes("@s.whatsapp.net")) {
                         from = from + "@s.whatsapp.net";
                     }
+                
                     console.log("Número después de procesar:", from);
-                    console.log("Respuesta:",response.data[0].respuesta);
-                    await sendDirectMessage(adapterProvider, from, response.data[0].respuesta);
-                    
+                    console.log("Respuesta:", respuesta);
+                
+                    await sendDirectMessage(adapterProvider, from, respuesta);
                 } else {
                     console.error("La respuesta de N8N no es válida:", response.data);
                 }
