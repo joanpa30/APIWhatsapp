@@ -40,6 +40,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          port: 5695
           script: |
             docker login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_TOKEN }}
             docker pull ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
