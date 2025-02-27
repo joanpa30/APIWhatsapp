@@ -1,0 +1,44 @@
+name: Deploy APIWhatsapp
+
+on:
+  push:
+    branches:
+      - main  # Se ejecuta solo cuando haces push a la rama main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 🛠️ 1. Clonar el repositorio
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 🔑 2. Iniciar sesión en GitHub Container Registry (GHCR)
+      - name: Iniciar sesión en GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USER }} --password-stdin
+
+      # 🏗️ 3. Construir la imagen de Docker
+      - name: Construir la imagen
+        run: |
+          docker build -t ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest .
+
+      # 🚀 4. Subir la imagen a GHCR
+      - name: Subir la imagen a GHCR
+        run: |
+          docker push ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+
+      # 🔄 5. Conectar al VPS y actualizar el contenedor
+      - name: Desplegar en VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            docker login ghcr.io -u ${{ secrets.GHCR_USER }} -p ${{ secrets.GHCR_TOKEN }}
+            docker pull ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+            docker stop apiwhatsapp || true
+            docker rm apiwhatsapp || true
+            docker run -d --name apiwhatsapp -p 3000:3000 -p 3030:3030 ghcr.io/${{ secrets.GHCR_USER }}/apiwhatsapp:latest
+            docker system prune -f
