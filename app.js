@@ -44,11 +44,23 @@ const main = async () => {
                 contexto: id,
             });
 
-            if (response.data && response.data.respuesta) {
+            /*if (response.data && response.data.respuesta) {
                 await sendDirectMessage(adapterProvider, from, response.data.respuesta);
             }else{
                 console.error("Respuesta de N8N", response.data);
-            }
+            }*/
+            if (response.data && response.data.respuesta) {
+                console.log(`Respuesta recibida de N8N: ${response.data.respuesta}`);
+                if (from) {
+                    await sendDirectMessage(adapterProvider, from, response.data.respuesta);
+                } else {
+                    console.error("Número de destinatario no válido.");
+                }
+                } else {
+                    console.error("La respuesta de N8N no es válida.");
+                }
+                
+
             
         } catch (error) {
             console.error('Error al enviar datos a N8N:', error);

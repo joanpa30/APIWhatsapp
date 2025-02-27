@@ -5,6 +5,7 @@ package-lock.json
 
 # Configuración de entorno
 .env
+.git
 
 # Logs y caché
 logs/
