@@ -2,6 +2,7 @@
 node_modules/
 package-lock.json
 20250225_app.js
+20250227_app.js
 
 # Configuración de entorno
 .env

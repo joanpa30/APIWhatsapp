@@ -31,73 +31,34 @@ const main = async () => {
     });
 
     QRPortalWeb();
-
+    
     adapterProvider.on('message', async (msg) => {
-        const { from, body, pushName, id } = msg;
-
-        console.log(`Nuevo mensaje recibido:`, msg);
-        console.log(`Nuevo mensaje de ${pushName} (${from}): ${body}`);
-        console.log(`ID del mensaje: ${id}`); // Verifica si el ID está presente
-
-        const contexto1 = msg.id || msg.key?.id || "ID_NO_DISPONIBLE";
-        console.log(`ID del mensaje: ${contexto1}`);
-
-        // Verifica si body existe antes de usar .trim()
-        const mensaje = body ? body.trim() : "(Mensaje vacío)";
-
-        // Verifica si from existe antes de usar replace()
-        const numero = from ? from.replace('@s.whatsapp.net', '') : "Número desconocido";
-
-        console.log(`Nuevo mensaje de ${pushName || "Desconocido"} (${numero}): ${mensaje}`);
-       
-
+        console.log(`Nuevo mensaje recibido:`, JSON.stringify(msg, null, 2));
+    
+        const { from, pushName, body } = msg;
+        const id = msg.key?.id || "ID_NO_DISPONIBLE";
+    
+        if (!body) {
+            console.log(`Mensaje vacío de ${pushName} (${from}). No procesar.`);
+            return;
+        }
+    
+        console.log(`Mensaje de ${pushName || "Desconocido"} (${from}): ${body}`);
+    
         try {
             const response = await axios.post(N8N_WEBHOOK_URL, {
                 numero: from.replace('@s.whatsapp.net', ''),
                 mensaje: body,
-                nombre: pushName,
-                contexto: id || "ID_NO_DISPONIBLE", // Si `id` es undefined, se envía un valor por defecto
+                nombre: pushName || "Desconocido",
+                contexto: id,
             });
-
-            /*if (response.data && response.data.respuesta) {
-                await sendDirectMessage(adapterProvider, from, response.data.respuesta);
-            }else{
-                console.error("Respuesta de N8N", response.data);
-            }*/
-                              
-                console.log("Respuesta completa de N8N:", response.data); 
-                console.log("Número antes de procesar:", from);
-              
-                // Verifica si response.data es un array y accede al primer elemento
-                if (Array.isArray(response.data) && response.data.length > 0) {
-                    let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
-                    let fromKey = keys[0]; // "from"
-                    let respuestaKey = keys[1]; // "respuesta"
-                
-                    let from = response.data[0][fromKey];
-                    let respuesta = response.data[0][respuestaKey];
-                
-                    console.log(from); // "573113787978"
-                    console.log(respuesta); // "¡Hola! ¿En qué puedo ayudarte?"
-                
-                    // Agrega el dominio de WhatsApp si es necesario
-                    if (!from.includes("@s.whatsapp.net")) {
-                        from = from + "@s.whatsapp.net";
-                    }
-                
-                    console.log("Número después de procesar:", from);
-                    console.log("Respuesta:", respuesta);
-                
-                    await sendDirectMessage(adapterProvider, from, respuesta);
-                } else {
-                    console.error("La respuesta de N8N no es válida:", response.data);
-                }
-            
+    
+            console.log("Respuesta de N8N:", response.data);
         } catch (error) {
-            console.error('Error al enviar datos a N8N:', error);
+            console.error("Error enviando a N8N:", error);
         }
     });
-
+        
     //Crea un objeto para enviar un mensaje directo desde un weebhook
     app.get('/send-message', async (req, res) => {
         const { number, message } = req.query;
