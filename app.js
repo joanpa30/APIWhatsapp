@@ -50,6 +50,7 @@ const main = async () => {
                 console.error("Respuesta de N8N", response.data);
             }*/
                 console.log("Respuesta completa de N8N:", response.data); 
+                console.log("Número antes de procesar:", from);
 
                 // Verifica si response.data es un array y accede al primer elemento
                 if (Array.isArray(response.data) && response.data.length > 0) {
