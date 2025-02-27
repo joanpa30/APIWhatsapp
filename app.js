@@ -52,8 +52,7 @@ const main = async () => {
                               
                 console.log("Respuesta completa de N8N:", response.data); 
                 console.log("Número antes de procesar:", from);
-                console.log("Valor antes de procesar:", respuesta);
-
+              
                 // Verifica si response.data es un array y accede al primer elemento
                 if (Array.isArray(response.data) && response.data.length > 0) {
                     let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
