@@ -49,9 +49,7 @@ const main = async () => {
             }else{
                 console.error("Respuesta de N8N", response.data);
             }*/
-                console.log("Respuesta completa de N8N:", response.data); 
-                console.log("Número antes de procesar:", from);
-
+               
                 let keys = Object.keys(response.data[0]); // ["from", "respuesta"]
                 let fromKey = keys[0]; // "from"
                 let respuestaKey = keys[1]; // "respuesta"
@@ -61,6 +59,9 @@ const main = async () => {
 
                 console.log(from); // "573113787978"
                 console.log(respuesta); // "¡Hola! ¿En qué puedo ayudarte?"
+
+                console.log("Respuesta completa de N8N:", response.data); 
+                console.log("Número antes de procesar:", from);
 
                 // Verifica si response.data es un array y accede al primer elemento
                 if (Array.isArray(response.data) && response.data.length > 0) {
