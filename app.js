@@ -49,20 +49,15 @@ const main = async () => {
             }else{
                 console.error("Respuesta de N8N", response.data);
             }*/
-            if (response.data && response.data.respuesta) {
-                console.log(`Respuesta recibida de N8N: ${response.data.respuesta}`);
-                if (from) {
-                    await sendDirectMessage(adapterProvider, from, response.data.respuesta);
-                } else {
-                    console.error("Número de destinatario no válido.");
-                }
-                } else {
-                    console.error("La respuesta de N8N no es válida.");
-                    console.log(`Respuesta recibida de N8N: ${response.data.respuesta}`);
-                    
-                }
-                
+                console.log("Respuesta completa de N8N:", response.data); 
 
+                // Verifica si response.data es un array y accede al primer elemento
+                if (Array.isArray(response.data) && response.data.length > 0) {
+                    const respuestaN8N = response.data[0].respuesta; // Extraer la respuesta
+                    await sendDirectMessage(adapterProvider, from, respuestaN8N);
+                } else {
+                    console.error("La respuesta de N8N no es válida:", response.data);
+                }
             
         } catch (error) {
             console.error('Error al enviar datos a N8N:', error);
