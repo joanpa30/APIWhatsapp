@@ -58,6 +58,8 @@ const main = async () => {
                 }
                 } else {
                     console.error("La respuesta de N8N no es válida.");
+                    console.log(`Respuesta recibida de N8N: ${response.data.respuesta}`);
+                    
                 }
                 
 
