@@ -44,6 +44,12 @@ const main = async () => {
         }
     
         console.log(`Mensaje de ${pushName || "Desconocido"} (${from}): ${body}`);
+
+        // 📌 Ignoramos mensajes de tipo "EPHEMERAL_SYNC_RESPONSE" (respuestas de sincronización)
+        if (message?.protocolMessage?.type === "EPHEMERAL_SYNC_RESPONSE") {
+            console.log(`Mensaje de sincronización detectado (ID: ${id}), ignorando...`);
+            return;
+        }
     
         try {
             const response = await axios.post(N8N_WEBHOOK_URL, {
