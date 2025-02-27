@@ -34,16 +34,22 @@ const main = async () => {
 
     adapterProvider.on('message', async (msg) => {
         const { from, body, pushName, id } = msg;
+
+        console.log(`Nuevo mensaje recibido:`, msg);
+        console.log(`Nuevo mensaje de ${pushName} (${from}): ${body}`);
+        console.log(`ID del mensaje: ${id}`); // Verifica si el ID está presente
+
         const contexto1 = msg.id || msg.key?.id || "ID_NO_DISPONIBLE";
         console.log(`ID del mensaje: ${contexto1}`);
 
-        if (!body.trim()) { // Evita procesar mensajes vacíos
-            console.log("Mensaje vacío, ignorando...");
-            return;
-        }
+        // Verifica si body existe antes de usar .trim()
+        const mensaje = body ? body.trim() : "(Mensaje vacío)";
 
-        console.log(`Nuevo mensaje de ${pushName} (${from}): ${body}`);
-        console.log(`ID del mensaje: ${id}`); // Verifica si el ID está presente
+        // Verifica si from existe antes de usar replace()
+        const numero = from ? from.replace('@s.whatsapp.net', '') : "Número desconocido";
+
+        console.log(`Nuevo mensaje de ${pushName || "Desconocido"} (${numero}): ${mensaje}`);
+       
 
         try {
             const response = await axios.post(N8N_WEBHOOK_URL, {
