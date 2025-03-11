@@ -47,5 +47,6 @@ jobs:
                 docker stop apiwhatsapp || true
                 docker rm apiwhatsapp || true
                 docker run -d --name apiwhatsapp -p 3000:3000 -p 3030:3030 ghcr.io/${{ github.repository_owner }}/apiwhatsapp:latest
+                docker image prune -a
         
          
