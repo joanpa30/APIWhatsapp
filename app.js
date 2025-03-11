@@ -4,6 +4,9 @@ const QRPortalWeb = require('@bot-whatsapp/portal');
 const BaileysProvider = require('@bot-whatsapp/provider/baileys');
 const MockAdapter = require('@bot-whatsapp/database/mock');
 const axios = require('axios');
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = 3030;
@@ -19,6 +22,15 @@ const sendDirectMessage = async (provider, jid, message) => {
     } catch (error) {
         console.error(`Error al enviar mensaje a ${jid}:`, error);
     }
+};
+
+const saveAudio = async (stream, filePath) => {
+    return new Promise((resolve, reject) => {
+        const fileStream = fs.createWriteStream(filePath);
+        stream.pipe(fileStream);
+        fileStream.on('finish', () => resolve(filePath));
+        fileStream.on('error', (err) => reject(err));
+    });
 };
 
 const main = async () => {
@@ -39,11 +51,18 @@ const main = async () => {
 
         try {
             let mediaUrl = null;
+            let filePath = null;
 
             // Verificar si el mensaje contiene un audio
             if (msg.message?.audioMessage) {
                 console.log("Mensaje de audio recibido");
-                mediaUrl = msg.message.audioMessage.url;
+
+                const stream = await downloadContentFromMessage(msg.message.audioMessage, 'audio');
+                const fileName = `audio_${id}.ogg`;
+                filePath = path.join(__dirname, fileName);
+
+                await saveAudio(stream, filePath);
+                mediaUrl = `http://localhost:${PORT}/audios/${fileName}`;
                 mensaje = `Mensaje de audio recibido: ${mediaUrl}`;
             }
 
@@ -75,9 +94,12 @@ const main = async () => {
                 console.error("La respuesta de N8N no es válida:", response.data);
             }
         } catch (error) {
-            console.error("Error enviando a N8N:", error);
+            console.error("Error al manejar el mensaje:", error);
         }
     });
+
+    // Servidor para acceder a los audios
+    app.use('/audios', express.static(path.join(__dirname)));
 
     // Endpoint para enviar mensajes directos desde un webhook
     app.get('/send-message', async (req, res) => {
@@ -103,3 +125,4 @@ main();
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
