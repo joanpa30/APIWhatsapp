@@ -62,7 +62,7 @@ const main = async () => {
                 filePath = path.join(__dirname, fileName);
 
                 await saveAudio(stream, filePath);
-                mediaUrl = `http://localhost:${PORT}/audios/${fileName}`;
+                mediaUrl = `http://149.50.143.17:${PORT}/audios/${fileName}`;
                 mensaje = `Mensaje de audio recibido: ${mediaUrl}`;
             }
 
