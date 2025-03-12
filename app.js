@@ -10,7 +10,7 @@ const path = require('path');
 
 const app = express();
 const PORT = 3030;
-const N8N_WEBHOOK_URL = 'http://n8n.jandatix.com:5678/webhook/whatsappAgent';
+const N8N_WEBHOOK_URL = 'https://n8n.jandatix.com:5678/webhook/whatsappAgent';
 const adapterDB = new MockAdapter();
 const adapterProvider = createProvider(BaileysProvider);
 const adapterFlow = createFlow([]);
