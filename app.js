@@ -47,7 +47,18 @@ const main = async () => {
 
         const { from, pushName, body } = msg;
         const id = msg.key?.id || "ID_NO_DISPONIBLE";
-        let mensaje = body || 'Mensaje multimedia';
+        //let mensaje = body || 'Mensaje multimedia';
+
+        // Validación para mensajes vacíos o de sincronización
+        if (!body) {
+            console.log(`Mensaje vacío de ${pushName} (${from}). No procesar.`);
+            return;
+        }
+
+        if (msg?.message?.protocolMessage?.type === "EPHEMERAL_SYNC_RESPONSE") {
+            console.log(`Mensaje de sincronización detectado (ID: ${id}), ignorando...`);
+            return;
+        }
 
         try {
             let mediaUrl = null;
@@ -69,7 +80,7 @@ const main = async () => {
             // Enviar los datos a N8N
             const response = await axios.post(N8N_WEBHOOK_URL, {
                 numero: from.replace('@s.whatsapp.net', ''),
-                mensaje: mensaje,
+                mensaje: body,
                 nombre: pushName || "Desconocido",
                 contexto: id,
                 mediaUrl: mediaUrl || null,
@@ -125,4 +136,3 @@ main();
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
-
