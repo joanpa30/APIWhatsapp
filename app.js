@@ -77,13 +77,17 @@ const main = async () => {
                 mensaje = `Mensaje de audio recibido: ${mediaUrl}`;
             }
 
-            // Enviar los datos a N8N
-            console.log(`⏳ Enviando a N8N: ${body}`);
+            // Identificador técnico completo (ej: numero@s.whatsapp.net o numero@lid)
+            const remoteJid = msg.key?.remoteJid || from;
+
+            // Cuerpo del mensaje
+            console.log(`⏳ Procesando mensaje de: ${pushName} | JID: ${remoteJid}`);
             const startTime = Date.now();
 
+            // Enviar los datos a N8N
             const response = await axios.post(N8N_WEBHOOK_URL, {
-                jid: from, // Identificador completo (importante para LID)
-                numero: from.split('@')[0],
+                jid: remoteJid, // ID completo para la respuesta técnica
+                numero: remoteJid.split('@')[0], // ID o número para búsqueda en CRM
                 mensaje: body,
                 nombre: pushName || "Desconocido",
                 contexto: id,
@@ -96,9 +100,8 @@ const main = async () => {
             if (Array.isArray(response.data) && response.data.length > 0) {
                 const n8nResponse = response.data[0];
 
-                // REGLA DE ORO: Si n8n no devuelve un JID claro, usamos el 'from' original del mensaje recibido
-                // Esto garantiza que si el mensaje vino de un LID, se responda al LID exacto.
-                const jidFinal = n8nResponse.jid || from;
+                // Usamos el JID de n8n o retrocedemos al original de la entrada
+                const jidFinal = n8nResponse.jid || n8nResponse.from || remoteJid;
                 const textoRespuesta = n8nResponse.respuesta;
 
                 if (!textoRespuesta) {
@@ -106,10 +109,13 @@ const main = async () => {
                     return;
                 }
 
-                console.log(`📤 Intentando entregar mensaje a: ${jidFinal}`);
-                await sendDirectMessage(adapterProvider, jidFinal, textoRespuesta);
+                // Si el JID de la respuesta no tiene dominio, le ponemos el estándar
+                const jidDestino = jidFinal.includes('@') ? jidFinal : `${jidFinal}@s.whatsapp.net`;
+
+                console.log(`📤 Entregando respuesta a: ${jidDestino}`);
+                await sendDirectMessage(adapterProvider, jidDestino, textoRespuesta);
             } else {
-                console.error("❌ Respuesta de N8N no válida (vacía o mal formato).");
+                console.error("❌ Respuesta de N8N no es un array válido o está vacío.");
             }
         } catch (error) {
             console.error("Error al manejar el mensaje:", error);
