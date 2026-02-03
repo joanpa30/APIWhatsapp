@@ -89,18 +89,20 @@ const main = async () => {
             console.log("Respuesta completa de N8N:", response.data);
 
             if (Array.isArray(response.data) && response.data.length > 0) {
-                let keys = Object.keys(response.data[0]);
-                let fromKey = keys[0];
-                let respuestaKey = keys[1];
+                const n8nResponse = response.data[0];
+                let jid = n8nResponse.from;
+                let text = n8nResponse.respuesta;
 
-                let from = response.data[0][fromKey];
-                let respuesta = response.data[0][respuestaKey];
-
-                if (!from.includes("@s.whatsapp.net")) {
-                    from = from + "@s.whatsapp.net";
+                if (!jid || !text) {
+                    console.error("Faltan campos 'from' o 'respuesta' en la respuesta de N8N:", n8nResponse);
+                    return;
                 }
 
-                await sendDirectMessage(adapterProvider, from, respuesta);
+                if (!jid.includes("@s.whatsapp.net")) {
+                    jid = `${jid}@s.whatsapp.net`;
+                }
+
+                await sendDirectMessage(adapterProvider, jid, text);
             } else {
                 console.error("La respuesta de N8N no es válida:", response.data);
             }
