@@ -78,8 +78,11 @@ const main = async () => {
             }
 
             // Enviar los datos a N8N
+            console.log(`⏳ Enviando a N8N: ${body}`);
+            const startTime = Date.now();
+
             const response = await axios.post(N8N_WEBHOOK_URL, {
-                jid: from, // Enviamos el JID completo (ej: numero@s.whatsapp.net o numero@lid)
+                jid: from, // Identificador completo (importante para LID)
                 numero: from.split('@')[0],
                 mensaje: body,
                 nombre: pushName || "Desconocido",
@@ -87,25 +90,26 @@ const main = async () => {
                 mediaUrl: mediaUrl || null,
             });
 
-            console.log("Respuesta completa de N8N:", response.data);
+            const duration = (Date.now() - startTime) / 1000;
+            console.log(`✅ N8N respondió en ${duration}s`);
 
             if (Array.isArray(response.data) && response.data.length > 0) {
                 const n8nResponse = response.data[0];
-                // Intentamos obtener el jid de la respuesta, o usamos el original si n8n no lo devuelve
-                const jidDestino = n8nResponse.jid || n8nResponse.from || from;
+
+                // REGLA DE ORO: Si n8n no devuelve un JID claro, usamos el 'from' original del mensaje recibido
+                // Esto garantiza que si el mensaje vino de un LID, se responda al LID exacto.
+                const jidFinal = n8nResponse.jid || from;
                 const textoRespuesta = n8nResponse.respuesta;
 
                 if (!textoRespuesta) {
-                    console.error("No hay texto de respuesta en la data de N8N");
+                    console.error("⚠️ n8n no devolvió 'respuesta'.");
                     return;
                 }
 
-                // Aseguramos que el JID tenga el dominio si n8n devolvió solo el número
-                const jidFinal = jidDestino.includes('@') ? jidDestino : `${jidDestino}@s.whatsapp.net`;
-
+                console.log(`📤 Intentando entregar mensaje a: ${jidFinal}`);
                 await sendDirectMessage(adapterProvider, jidFinal, textoRespuesta);
             } else {
-                console.error("La respuesta de N8N no es válida:", response.data);
+                console.error("❌ Respuesta de N8N no válida (vacía o mal formato).");
             }
         } catch (error) {
             console.error("Error al manejar el mensaje:", error);
