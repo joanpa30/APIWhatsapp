@@ -5,6 +5,10 @@ on:
     branches:
       - main  # Se ejecuta solo cuando haces push a la rama main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   create-docker-image:
     runs-on: ubuntu-latest
