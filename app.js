@@ -77,42 +77,19 @@ const main = async () => {
                 mensaje = `Mensaje de audio recibido: ${mediaUrl}`;
             }
 
-            // 1. Identificador técnico inicial
-            let remoteJid = msg.key?.remoteJid || from;
+            // 1. Identificador técnico REAL (Tal cual viene de WhatsApp)
+            const remoteJid = msg.key?.remoteJid || from;
 
-            // 2. Extraer el ID puro y determinar el dominio correcto
-            let pureId = remoteJid.split('@')[0];
+            // 2. Número para n8n (MSISDN limpio)
+            const numeroLimpio = remoteJid.split('@')[0].replace(/^57/, '');
 
-            // Lógica de LID: Si tiene 15 dígitos, es un LID y debe usar @lid para enviar mensajes
-            const isLid = pureId.length >= 15;
-            const correctDomain = isLid ? '@lid' : '@s.whatsapp.net';
-            const technicalJid = pureId + correctDomain;
-
-            console.log(`🔍 Detectado: ${isLid ? 'LID' : 'Número estándar'} | ID: ${pureId}`);
-
-            // 3. Intentar obtener el número de teléfono REAL (MSISDN) para n8n
-            let numeroParaN8N = pureId;
-            try {
-                // Intentamos buscar en los contactos del proveedor si existe el mapeo al número real
-                const contactInfo = await adapterProvider.getInstance().onWhatsApp(technicalJid);
-                if (contactInfo && contactInfo[0] && contactInfo[0].jid) {
-                    // Si el jid devuelto es distinto, es probable que sea el MSISDN (teléfono real)
-                    const mappedNumber = contactInfo[0].jid.split('@')[0];
-                    if (mappedNumber !== pureId) {
-                        console.log(`📱 Mapeo encontrado: LID ${pureId} -> Teléfono ${mappedNumber}`);
-                        numeroParaN8N = mappedNumber;
-                    }
-                }
-            } catch (e) {
-                console.log("No se pudo obtener el mapeo del número real, usando ID original.");
-            }
-
+            console.log(`� Entrada: ${pushName} (${numeroLimpio}) | JID: ${remoteJid}`);
             const startTime = Date.now();
 
-            // 4. Enviar los datos a N8N
+            // 3. Enviar a N8N
             const response = await axios.post(N8N_WEBHOOK_URL, {
-                jid: technicalJid, // Mandamos el JID corregido (@lid o @s.whatsapp)
-                numero: numeroParaN8N, // Mandamos el teléfono real (311...) si lo encontramos
+                jid: remoteJid, // ID técnico para responder
+                numero: numeroLimpio, // Número para el CRM
                 mensaje: body,
                 nombre: pushName || "Desconocido",
                 contexto: id,
@@ -120,25 +97,19 @@ const main = async () => {
             });
 
             const duration = (Date.now() - startTime) / 1000;
-            console.log(`✅ N8N respondió en ${duration}s con:`, JSON.stringify(response.data));
+            console.log(`✅ N8N OK en ${duration}s`);
 
             if (Array.isArray(response.data) && response.data.length > 0) {
                 const n8nResponse = response.data[0];
 
-                // Priorizamos el JID que traiga n8n, si no, usamos nuestro technicalJid
-                let targetJid = n8nResponse.jid || n8nResponse.from || technicalJid;
+                // Prioridad absoluta al JID original del mensaje de entrada
+                const jidDestino = n8nResponse.jid || remoteJid;
                 const textoRespuesta = n8nResponse.respuesta;
 
                 if (!textoRespuesta) return;
 
-                // Corregimos dominio del JID de salida si n8n mandó solo números
-                if (!targetJid.includes('@')) {
-                    // Si n8n nos devuelve el ID largo, le ponemos @lid, si es corto @s.whatsapp.net
-                    targetJid = targetJid.length >= 15 ? `${targetJid}@lid` : `${targetJid}@s.whatsapp.net`;
-                }
-
-                console.log(`📤 Enviando respuesta a: ${targetJid}`);
-                await sendDirectMessage(adapterProvider, targetJid, textoRespuesta);
+                console.log(`📤 Respondiendo a: ${jidDestino}`);
+                await sendDirectMessage(adapterProvider, jidDestino, textoRespuesta);
             }
         } catch (error) {
             console.error("Error al manejar el mensaje:", error);
