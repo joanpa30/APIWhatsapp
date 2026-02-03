@@ -79,7 +79,8 @@ const main = async () => {
 
             // Enviar los datos a N8N
             const response = await axios.post(N8N_WEBHOOK_URL, {
-                numero: from.replace('@s.whatsapp.net', ''),
+                jid: from, // Enviamos el JID completo (ej: numero@s.whatsapp.net o numero@lid)
+                numero: from.split('@')[0],
                 mensaje: body,
                 nombre: pushName || "Desconocido",
                 contexto: id,
@@ -90,19 +91,19 @@ const main = async () => {
 
             if (Array.isArray(response.data) && response.data.length > 0) {
                 const n8nResponse = response.data[0];
-                let jid = n8nResponse.from;
-                let text = n8nResponse.respuesta;
+                // Intentamos obtener el jid de la respuesta, o usamos el original si n8n no lo devuelve
+                const jidDestino = n8nResponse.jid || n8nResponse.from || from;
+                const textoRespuesta = n8nResponse.respuesta;
 
-                if (!jid || !text) {
-                    console.error("Faltan campos 'from' o 'respuesta' en la respuesta de N8N:", n8nResponse);
+                if (!textoRespuesta) {
+                    console.error("No hay texto de respuesta en la data de N8N");
                     return;
                 }
 
-                if (!jid.includes("@s.whatsapp.net")) {
-                    jid = `${jid}@s.whatsapp.net`;
-                }
+                // Aseguramos que el JID tenga el dominio si n8n devolvió solo el número
+                const jidFinal = jidDestino.includes('@') ? jidDestino : `${jidDestino}@s.whatsapp.net`;
 
-                await sendDirectMessage(adapterProvider, jid, text);
+                await sendDirectMessage(adapterProvider, jidFinal, textoRespuesta);
             } else {
                 console.error("La respuesta de N8N no es válida:", response.data);
             }
